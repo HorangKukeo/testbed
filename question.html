@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>클리닉 콘텐츠</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/NanumBarunGothic-YetHangul/NanumBarunGothic-YetHangul.css" type="text/css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Nanum Barun Gothic YetHangul', sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .passage {
+            text-indent: 5px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            white-space: pre-wrap; /* 줄바꿈 유지 */
+        }
+
+        .question-number {
+            text-indent: 0; /* 들여쓰기 초기화 */
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .highlight-container {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            text-align: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 5px; /* 수평 마진 */
+            padding: 5px 5px 5px 5px; /* 상단 여유 공간 확보 */
+            white-space: normal;
+            word-wrap: break-word;
+            /* width은 내용에 따라 자동 조절됨 */
+        }
+
+        .highlight-container .hint-text {
+            display: block;
+            font-size: 12px;
+            font-weight: normal;
+            color: #007bff;
+            background: #f9f9f9;
+            padding: 0 5px;
+            margin-bottom: 5px;
+        }
+
+        .highlight-container input {
+            border: none;
+            outline: none;
+            font-size: 12px;
+            font-weight: bold;
+            color: #007bff;
+            text-align: center;
+            background: transparent;
+            /* width은 size 속성에 의해 조절됨 */
+        }
+
+        .highlight-line {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            /*border: 1px solid #007bff;*/
+            border-radius: 5px;
+            background-color: #a39d9d51;
+            cursor: pointer;
+            font-weight: bold;
+            color: #007bff;
+            margin: -20px 20px 0px 0px; /* 수평 마진 */
+            padding: 5px 5px 5px 5px;
+            white-space: normal;
+            word-wrap: break-word;
+            font-size: 13px; /* 원하는 작은 글씨 크기로 조정 */
+            color: #007bff;   /* 파란색 */
+        }
+
+
+        .choice-container {
+            display: inline-block;
+            position: relative;
+            vertical-align: middle;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f1f1f1;
+            padding: 5px;
+            margin: 5px 5px; /* 수평 마진 */
+            word-wrap: break-word;
+            white-space: normal;
+        }
+
+        .choice-option {
+            display: inline-block;
+            margin: 0 5px;
+            padding: 3px 5px;
+            text-align: center;
+            background-color: #e6e6e6;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+        }
+        .choice-option:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .choice-option.selected {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .correct-answer {
+            font-size: 12px; /* 작은 글씨 */
+            color: #007bff; /* 파란색 */
+            margin-top: 5px; /* 위와의 간격 */
+            font-weight: bold;
+            display: flex; /* 부모 요소를 flex 컨테이너로 설정 */
+            justify-content: center; /* 수평 중앙 정렬 */
+            align-items: center; /* 수직 중앙 정렬 */
+        }
+
+        .result-icon {
+            position: absolute;
+            top: 25%; /* 프레임 위로 이동 */
+            left: 50%;  /* 가로 중앙 */
+            transform: translateX(-50%); /* 가로 중앙 정렬 */
+            z-index: 100; /* 다른 요소 위로 표시 */
+        }
+
+        .score {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* 선택형 문제 클릭 방지 */
+        .choice-option.disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>클리닉 콘텐츠</h1>
+    <div id="passage"></div>
+    <button id="submit-button" onclick="submitAnswers()">제출하기</button>
+
+    <script>
+        const userAnswers = {}; // 사용자 응답 저장
+        let globalQuestionCounter = 1; // 전체 문제 번호 카운트
+
+        function parseAndDisplayPassage(passage) {
+            const regex = /\*(\w)\*\((.*?)\)/g;
+
+            // 지문을 줄 단위로 분리
+            const lines = passage.split('\n');
+            const processedLines = lines.map(line => {
+                // '##' 앞에 공백이 있을 수 있으므로 정규식으로 검사
+                const highlightMatch = line.match(/^\s*##(.*)/);
+                if (highlightMatch) {
+                    // '##' 제거하고 스타일 적용
+                    const styledLine = highlightMatch[1].trim();
+                    return `<span class="highlight-line">${styledLine}</span>`;
+                } else {
+                    return line;
+                }
+            });
+
+            // 줄바꿈을 유지하기 위해 <br> 추가
+            const passageWithLineBreaks = processedLines.join('<br>');
+
+            // 문제 마커(*a*, *b*) 처리
+            const replacedPassage = passageWithLineBreaks.replace(regex, (match, type, content) => {
+                let questionNumber = globalQuestionCounter;
+                let questionHTML = '';
+
+                if (type === 'a') {
+                    const [hint, answer] = content.split('_');
+                    const inputId = `input-${questionNumber}`;
+                    userAnswers[inputId] = { userAnswer: '', correctAnswer: answer }; // 데이터 초기화
+
+                    // 정답 길이에 따라 input size 조절 (최소 3글자 크기 보장)
+                    const inputSize = Math.max(answer.length, 3) + 1;
+
+                    questionHTML = `<span class="highlight-container" id="${inputId}" data-answer="${answer}" data-type="a">
+                                        <span class="question-number">${questionNumber}</span>
+                                        <span class="hint-text">${hint}</span>
+                                        <input type="text" placeholder="정답 입력" size="${inputSize}" />
+                                    </span>`;
+                } else if (type === 'b') {
+                    const options = content.split('/');
+                    const choiceId = `choice-${questionNumber}`;
+                    const correctOption = options.find(o => o.endsWith('_')).replace(/_$/, '');
+                    userAnswers[choiceId] = { userAnswer: '', correctAnswer: correctOption }; // 데이터 초기화
+
+                    const optionsHTML = options.map(option => {
+                        const isCorrect = option.endsWith('_');
+                        const text = option.replace(/_$/, '');
+                        return `<span class="choice-option" data-correct="${isCorrect}">${text}</span>`;
+                    }).join('');
+
+                    questionHTML = `<span class="choice-container" id="${choiceId}" data-type="b">
+                                        <span class="question-number">${questionNumber}</span>
+                                        ${optionsHTML}
+                                    </span>`;
+                }
+
+                globalQuestionCounter++;
+                return questionHTML;
+            });
+
+            const passageContainer = document.createElement('div');
+            passageContainer.classList.add('passage');
+            passageContainer.innerHTML = replacedPassage; // 줄바꿈은 <br>로 처리됨
+            document.getElementById('passage').appendChild(passageContainer);
+
+            // 이벤트 연결
+            passageContainer.querySelectorAll('.highlight-container').forEach(container => {
+                const input = container.querySelector('input');
+                container.addEventListener('click', function () {
+                    input.focus();
+                });
+
+                input.addEventListener('blur', function () {
+                    const userAnswer = this.value;
+                    userAnswers[container.id].userAnswer = userAnswer; // 입력 값 저장
+                });
+
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        const userAnswer = this.value;
+                        userAnswers[container.id].userAnswer = userAnswer; // 입력 값 저장
+                        this.blur();
+                    }
+                });
+            });
+
+            passageContainer.querySelectorAll('.choice-container .choice-option').forEach(option => {
+                option.addEventListener('click', function () {
+                    const container = option.parentElement;
+                    container.querySelectorAll('.choice-option').forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+
+                    // 저장: userAnswers에 선택한 답 저장
+                    const selectedAnswer = option.textContent;
+                    userAnswers[container.id].userAnswer = selectedAnswer;
+                    console.log(`선택 저장: ${container.id} => ${selectedAnswer}`);
+                });
+            });
+
+        }
+
+
+        async function loadExcelAndParse() {
+            try {
+                const response = await fetch('qdb.xlsm');
+                const data = await response.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                rows.slice(1).forEach(row => {
+                    const passage = row[1]; // 지문
+                    if (passage) {
+                        parseAndDisplayPassage(passage);
+                    }
+                });
+            } catch (error) {
+                console.error('Excel 데이터를 로드하는 중 오류 발생:', error);
+            }
+        }
+
+        function createGreenCircle() {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", "20");
+            svg.setAttribute("height", "20");
+            svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", "10");
+            circle.setAttribute("cy", "10");
+            circle.setAttribute("r", "9");
+            circle.setAttribute("stroke", "green");
+            circle.setAttribute("stroke-width", "2");
+            circle.setAttribute("fill", "none");
+            svg.appendChild(circle);
+            return svg;
+        }
+
+        function createRedCheck() {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", "20");
+            svg.setAttribute("height", "20");
+            svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", "M4 10l4 4l8-8");
+            path.setAttribute("stroke", "red");
+            path.setAttribute("stroke-width", "2");
+            path.setAttribute("fill", "none");
+            svg.appendChild(path);
+            return svg;
+        }
+
+        function submitAnswers() {
+            Object.keys(userAnswers).forEach((key) => {
+                const answerData = userAnswers[key];
+
+                if (!answerData || typeof answerData.correctAnswer === 'undefined') {
+                    console.warn(`Invalid data for key: ${key}`, answerData);
+                    return;
+                }
+
+                const { userAnswer, correctAnswer } = answerData;
+                const isCorrect = userAnswer.trim() === correctAnswer.trim();
+                const container = document.getElementById(key);
+
+                // 아이콘 생성 및 추가
+                const resultIcon = isCorrect ? createGreenCircle() : createRedCheck();
+                resultIcon.classList.add("result-icon");
+                container.style.position = "relative";
+                container.appendChild(resultIcon);
+
+                // 정답 입력 불가 처리
+                const input = container.querySelector('input');
+                if (input) {
+                    input.disabled = true;
+                }
+
+                // 틀린 경우 정답 표시 (줄바꿈 포함)
+                if (!isCorrect && container.dataset.type === 'a') { // type을 data-type으로 수정
+                    const correctAnswerText = document.createElement('div'); // 줄바꿈을 위해 div 사용
+                    correctAnswerText.classList.add('correct-answer');
+                    correctAnswerText.textContent = `정답: ${correctAnswer}`;
+                    container.appendChild(correctAnswerText);
+                }
+
+                // 선택지 클릭 방지
+                const options = container.querySelectorAll('.choice-option');
+                if (options.length > 0) {
+                    options.forEach(option => {
+                        option.classList.add('disabled');
+                        option.style.pointerEvents = 'none';
+                    });
+                }
+            });
+
+            // 제출 버튼 삭제
+            const submitButton = document.getElementById('submit-button');
+            if (submitButton) {
+                submitButton.remove();
+            }
+
+            // 점수 표시
+            const score = Object.values(userAnswers)
+                .filter(answerData => answerData && answerData.userAnswer && answerData.correctAnswer)
+                .filter(({ userAnswer, correctAnswer }) => userAnswer.trim() === correctAnswer.trim()).length;
+
+            const scoreDisplay = document.createElement('div');
+            scoreDisplay.classList.add('score');
+            scoreDisplay.textContent = `최종 점수: ${score} / ${Object.keys(userAnswers).length}`;
+            document.body.appendChild(scoreDisplay);
+        }
+
+        window.onload = loadExcelAndParse;
+    </script>
+</body>
+</html>
